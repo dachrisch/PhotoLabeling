@@ -1,9 +1,7 @@
 import unittest
 
 import numpy
-import pexif
 from PIL import Image
-import os
 from iptcinfo import IPTCInfo
 
 
