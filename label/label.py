@@ -22,9 +22,9 @@ class GoogleServiceConnector(object):
         credentials = GoogleCredentials.get_application_default()
         self._service = discovery.build('vision', 'v1', credentials=credentials)
 
-    def request(self, body):
+    def build_request(self, body):
         request = self._service.images().annotate(body=body)
-        return request.execute()
+        return request
 
 
 class LabelServiceExecutor(object):
@@ -32,7 +32,7 @@ class LabelServiceExecutor(object):
         self.__connector = connector
 
     def _perform_request(self, image_file):
-        return self.execute_request(body={
+        return self._execute_request(body={
             'requests': [{
                 'image': {
                     'content': self.image_to_base64_utf8(image_file)
@@ -58,5 +58,5 @@ class LabelServiceExecutor(object):
             image_content = base64.b64encode(image.read())
             return image_content.decode('UTF-8')
 
-    def execute_request(self, body):
-        return self.__connector.request(body)
+    def _execute_request(self, body):
+        return self.__connector.build_request(body).execute()
