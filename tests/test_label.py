@@ -6,6 +6,8 @@ import numpy
 from PIL import Image
 from iptcinfo import IPTCInfo
 
+from label.iptcinfo_manipulation import SaveToSameFileIPTCInfo
+
 TESTDIR = '_testdir'
 
 sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
@@ -72,22 +74,13 @@ class LabelExifTagTest(unittest.TestCase):
         self.assertRaisesRegexp(Exception, 'No IPTC data found', IPTCInfo, '_testdir/2015/10/test3.jpg')
 
     def test_newly_saved_file_with_IPTCInfo_has_same_stats(self):
-        import time
-        time.sleep(1)
-        IPTCInfo(self.jpg_file, force=True).save()
+        self.assertEqual(823, os.lstat(self.jpg_file).st_size)
+
+        SaveToSameFileIPTCInfo(self.jpg_file, force=True).save()
         backup_file = '%s~' % self.jpg_file
-        import shutil
-        shutil.copystat(backup_file, self.jpg_file)
 
-        self.assertEqualAttributes(os.lstat(self.jpg_file), os.lstat(backup_file),
-                                   ('st_mode', 'st_dev', 'st_atime', 'st_mtime'))
-
-    def assertEqualAttributes(self, first, second, attributes):
-        for attribute in attributes:
-            first_attribute = getattr(first, attribute)
-            seconds_attribute = getattr(second, attribute)
-            self.assertAlmostEquals(first_attribute, seconds_attribute, places=1,
-                                    msg='%s: [%s] <> [%s]' % (attribute, first_attribute, seconds_attribute))
+        self.assertEqual(861, os.lstat(self.jpg_file).st_size)
+        self.assertEqual(823, os.lstat(backup_file).st_size)
 
 
 class TestServiceConnector(GoogleServiceConnector):

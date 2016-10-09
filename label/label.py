@@ -4,8 +4,9 @@ import base64
 import logging
 
 from googleapiclient import discovery
-from iptcinfo import IPTCInfo
 from oauth2client.client import GoogleCredentials
+
+from iptcinfo_manipulation import SaveToSameFileIPTCInfo
 
 
 class GoogleServiceConnector(object):
@@ -63,7 +64,7 @@ class ImageLabeler(object):
         self._log = logging.getLogger(self.__class__.__name__)
 
     def label(self, jpg_file, tags):
-        info = IPTCInfo(jpg_file, force=True)
+        info = SaveToSameFileIPTCInfo(jpg_file, force=True)
         for tag in tags:
             if tag not in info.keywords:
                 self._log.debug('appending non existent tag (%s) to [%s]' % (tag, info.keywords))
