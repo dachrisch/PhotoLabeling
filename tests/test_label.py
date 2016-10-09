@@ -9,30 +9,7 @@ from iptcinfo import IPTCInfo
 TESTDIR = '_testdir'
 
 sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
-from label.label import GoogleServiceConnector, LabelServiceExecutor, ImageLabeler
-
-
-class FileWalker(object):
-    def __init__(self, file_labeler, label_service):
-        self._file_labeler = file_labeler
-        self._label_service = label_service
-
-    def walk_and_tag(self, parent_directory):
-        files = self.__collect_files(parent_directory)
-
-        for jpg_file in files:
-            tags = self._label_service.tags_for_image(jpg_file)
-            self._file_labeler.label(jpg_file, tags)
-
-    def __collect_files(self, parent_directory):
-        from fnmatch import filter
-        from os import path, walk
-
-        collected_files = []
-        for root, _, filenames in walk(parent_directory):
-            collected_files.extend(tuple(
-                map(lambda filename: path.join(root, filename), filter(filenames, "*.jpg"))))
-        return collected_files
+from label.label import GoogleServiceConnector, LabelServiceExecutor, ImageLabeler, FileWalker
 
 
 class LabelExifTagTest(unittest.TestCase):
