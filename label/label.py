@@ -3,6 +3,7 @@ import argparse
 import base64
 
 from googleapiclient import discovery
+from iptcinfo import IPTCInfo
 from oauth2client.client import GoogleCredentials
 
 
@@ -60,3 +61,12 @@ class LabelServiceExecutor(object):
 
     def _execute_request(self, body):
         return self.__connector.build_request(body).execute()
+
+
+class ImageLabeler(object):
+    def label(self, jpg_file, tags):
+        info = IPTCInfo(jpg_file, force=True)
+        for tag in tags:
+            if tag not in info.keywords:
+                info.keywords.append(tag)
+        info.save()
