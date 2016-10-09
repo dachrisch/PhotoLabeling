@@ -3,6 +3,10 @@ import logging
 from iptcinfo import IPTCInfo
 
 
+class BackupFileExistsException(Exception):
+    pass
+
+
 class SaveToSameFileIPTCInfo(IPTCInfo):
     def __init__(self, fobj, *args, **kwds):
         super(SaveToSameFileIPTCInfo, self).__init__(fobj, *args, **kwds)
@@ -34,11 +38,7 @@ class SaveToSameFileIPTCInfo(IPTCInfo):
             adobe = None
         self._log.debug('adobe2: %r', adobe)
 
-        self._log.info('writing...')
-        # (tmpfd, tmpfn) = tempfile.mkstemp()
-        # os.close(tmpfd)
-        # ~ fh = os.fdopen(tmpfh, 'wb')
-        # tmpfh = open(tmpfn, 'wb')
+        self._log.debug('writing...')
         tmpfh = self._getfh('wb')
         # fh = StringIO()
         if not tmpfh:
@@ -62,4 +62,8 @@ class SaveToSameFileIPTCInfo(IPTCInfo):
 
     def _backup_original(self):
         import shutil
-        shutil.copy2(self._filename, '%s~' % self._filename)
+        backup_filename = '%s~' % self._filename
+        import os
+        if os.path.exists(backup_filename):
+            raise BackupFileExistsException(self._filename)
+        shutil.copy2(self._filename, backup_filename)
