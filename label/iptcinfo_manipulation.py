@@ -14,7 +14,7 @@ class SaveToSameFileIPTCInfo(IPTCInfo):
 
     def save(self, options=None):
         """Saves Jpeg with IPTC data to a given file name."""
-
+        self._log.info('saving file [%s]' % self._filename)
         self._backup_original()
         # Open file and snarf data from it.
         fh = self._getfh()
@@ -61,6 +61,7 @@ class SaveToSameFileIPTCInfo(IPTCInfo):
         return True
 
     def _backup_original(self):
+        self._log.debug('creating backup file for [%s]' % self._filename)
         import shutil
         backup_filename = '%s~' % self._filename
         import os
