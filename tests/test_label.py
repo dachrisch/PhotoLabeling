@@ -29,6 +29,13 @@ class LabelExifTagTest(unittest.TestCase):
         info = IPTCInfo(self.jpg_file)
         self.assertEqual(info.keywords, ['A', 'B'])
 
+    def test_find_labels_for_image(self):
+        connector = TestServiceConnector()
+        service_executor = LabelServiceExecutor(connector)
+        self.assertTupleEqual(
+            (u'cat', u'mammal', u'vertebrate', u'whiskers'),
+            service_executor.tags_for_image(self.jpg_file))
+
 
 class TestServiceConnector(GoogleServiceConnector):
     def __init__(self):
@@ -44,15 +51,3 @@ class TestServiceConnector(GoogleServiceConnector):
                                                      {'score': 0.93,
                                                       'description': u'whiskers'}
                                                      )},)})
-
-
-class GoogleLabelServiceTest(unittest.TestCase):
-    def setUp(self):
-        self.image_jpg = 'cat.jpg'
-
-    def test_find_labels_for_image(self):
-        connector = TestServiceConnector()
-        service_executor = LabelServiceExecutor(connector)
-        self.assertTupleEqual(
-            (u'cat', u'mammal', u'vertebrate', u'whiskers'),
-            service_executor.tags_for_image(self.image_jpg))
