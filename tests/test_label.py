@@ -1,10 +1,12 @@
 import os
+import sys
 import unittest
 
 import numpy
 from PIL import Image
 from iptcinfo import IPTCInfo
 
+sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
 from label.label import GoogleServiceConnector, LabelServiceExecutor
 
 
