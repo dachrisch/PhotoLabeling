@@ -1,26 +1,18 @@
 #!/usr/bin/env python
-import argparse
+
 import base64
+import logging
 
 from googleapiclient import discovery
 from iptcinfo import IPTCInfo
 from oauth2client.client import GoogleCredentials
 
 
-def main(args):
-    pass
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('image_file', help='The image you\'d like to label.')
-    args = parser.parse_args()
-    main(args)
-
-
 class GoogleServiceConnector(object):
     def __init__(self):
+        self._log = logging.getLogger(self.__class__.__name__)
         credentials = GoogleCredentials.get_application_default()
+        self._log.info('logging into Google Vision using [%s]' % credentials.service_account_email)
         self._service = discovery.build('vision', 'v1', credentials=credentials)
 
     def build_request(self, body):
@@ -31,8 +23,10 @@ class GoogleServiceConnector(object):
 class LabelServiceExecutor(object):
     def __init__(self, connector):
         self.__connector = connector
+        self._log = logging.getLogger(self.__class__.__name__)
 
     def _perform_request(self, image_file):
+        self._log.debug('performing vision request for [%s]' % image_file)
         return self._execute_request(body={
             'requests': [{
                 'image': {
@@ -47,11 +41,12 @@ class LabelServiceExecutor(object):
 
     def tags_for_image(self, image_file):
         response = self._perform_request(image_file)
-        label = tuple(
+        labels = tuple(
             annotation['description'] for annotation in
             sorted(filter(lambda field: field['score'] > 0.8, response['responses'][0]['labelAnnotations']),
                    key=lambda field: field['score'], reverse=True))
-        return label
+        self._log.info('found (%d) tags for file [%s]: %s' % (len(labels), image_file, labels))
+        return labels
 
     @staticmethod
     def image_to_base64_utf8(image_file):
@@ -64,10 +59,14 @@ class LabelServiceExecutor(object):
 
 
 class ImageLabeler(object):
+    def __init__(self):
+        self._log = logging.getLogger(self.__class__.__name__)
+
     def label(self, jpg_file, tags):
         info = IPTCInfo(jpg_file, force=True)
         for tag in tags:
             if tag not in info.keywords:
+                self._log.debug('appending non existent tag (%s) to [%s]' % (tag, info.keywords))
                 info.keywords.append(tag)
         info.save()
 
@@ -76,15 +75,19 @@ class FileWalker(object):
     def __init__(self, file_labeler, label_service):
         self._file_labeler = file_labeler
         self._label_service = label_service
+        self._log = logging.getLogger(self.__class__.__name__)
 
     def walk_and_tag(self, parent_directory):
-        files = self.__collect_files(parent_directory)
-
+        files = self.collect_files(parent_directory)
+        self._log.info('Found (%d) files in [%s]. Start labeling...' % (len(files), parent_directory))
         for jpg_file in files:
+            self._log.info('Labeling file [%s]' % jpg_file)
             tags = self._label_service.tags_for_image(jpg_file)
             self._file_labeler.label(jpg_file, tags)
+        self._log.info('done.')
 
-    def __collect_files(self, parent_directory):
+    @staticmethod
+    def collect_files(parent_directory):
         from fnmatch import filter
         from os import path, walk
 
