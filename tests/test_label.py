@@ -90,6 +90,9 @@ class LabelExifTagTest(unittest.TestCase):
         self.assertRaisesRegexp(BackupFileExistsException, '_testdir/test_1x1_no_exif.jpg',
                                 SaveToSameFileIPTCInfo(self.jpg_file, force=True).save)
 
+    def test_dont_tag_already_tagged_image(self):
+        self.fail('not implemented')
+
 
 class TestServiceConnector(GoogleServiceConnector):
     # noinspection PyMissingConstructor
