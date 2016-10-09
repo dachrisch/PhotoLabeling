@@ -6,12 +6,12 @@ import numpy
 from PIL import Image
 from iptcinfo import IPTCInfo
 
+sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
+from label.label import GoogleServiceConnector, LabelServiceExecutor, ImageLabeler, FileWalker
 from label.iptcinfo_manipulation import SaveToSameFileIPTCInfo, BackupFileExistsException
 
 TESTDIR = '_testdir'
 
-sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
-from label.label import GoogleServiceConnector, LabelServiceExecutor, ImageLabeler, FileWalker
 
 
 class LabelExifTagTest(unittest.TestCase):
