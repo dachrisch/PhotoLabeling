@@ -6,7 +6,7 @@ import numpy
 from PIL import Image
 from iptcinfo import IPTCInfo
 
-from label.iptcinfo_manipulation import SaveToSameFileIPTCInfo
+from label.iptcinfo_manipulation import SaveToSameFileIPTCInfo, BackupFileExistsException
 
 TESTDIR = '_testdir'
 
@@ -55,7 +55,10 @@ class LabelExifTagTest(unittest.TestCase):
 
     def test_preserve_existing_labels(self):
         labeler = ImageLabeler()
-        labeler.label(self.jpg_file, (u'cat', u'mammal'))
+        info = IPTCInfo(self.jpg_file, force=True)
+        info.keywords = ('cat', 'mammal')
+        info.save()
+        os.remove('%s~' % self.jpg_file)
         labeler.label(self.jpg_file, (u'dog', u'mammal'))
         info = IPTCInfo(self.jpg_file)
         self.assertEqual(info.keywords, ['cat', 'mammal', 'dog'])
@@ -81,6 +84,11 @@ class LabelExifTagTest(unittest.TestCase):
 
         self.assertEqual(861, os.lstat(self.jpg_file).st_size)
         self.assertEqual(823, os.lstat(backup_file).st_size)
+
+    def test_dont_overwrite_backups(self):
+        SaveToSameFileIPTCInfo(self.jpg_file, force=True).save()
+        self.assertRaisesRegexp(BackupFileExistsException, '_testdir/test_1x1_no_exif.jpg',
+                                SaveToSameFileIPTCInfo(self.jpg_file, force=True).save)
 
 
 class TestServiceConnector(GoogleServiceConnector):
