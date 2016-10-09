@@ -3,7 +3,7 @@
 
 PhotoLabeling
 ===================
-Labels Photos using Googles Vision enginge
+Labels Photos using Googles Vision engine
 
 
 usage
