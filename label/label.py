@@ -8,6 +8,9 @@ from oauth2client.client import GoogleCredentials
 
 from iptcinfo_manipulation import SaveToSameFileIPTCInfo
 
+TAGGED_PHOTO_KEY = 'custom1'
+TAGGED_PHOTO_LABEL = 'already_tagged_PhotoLabel_v1.0'
+
 
 class GoogleServiceConnector(object):
     def __init__(self):
@@ -59,18 +62,37 @@ class LabelServiceExecutor(object):
         return self.__connector.build_request(body).execute()
 
 
-class ImageLabeler(object):
+class AlreadyLabeledException(Exception):
+    pass
+
+
+class FileLabeler(object):
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
 
     def label(self, jpg_file, tags):
+        if self.already_labeled(jpg_file):
+            raise AlreadyLabeledException(jpg_file)
         info = SaveToSameFileIPTCInfo(jpg_file, force=True)
-        for tag in tags:
-            if tag not in info.keywords:
-                self._log.debug('appending non existent tag (%s) to [%s]' % (tag, info.keywords))
-                info.keywords.append(tag)
-        info.save()
+        remaining_tags = filter(lambda _tag: _tag not in info.keywords, tags)
+        if remaining_tags:
+            self._log.debug('appending non existent tags (%s) to [%s]' % (remaining_tags, info.keywords))
+            info.keywords.extend(remaining_tags)
+            info.data[TAGGED_PHOTO_KEY] = TAGGED_PHOTO_LABEL
+            info.save()
+        else:
+            self._log.debug('all tags already present: %s' % str(tags))
 
+    @staticmethod
+    def already_labeled(jpg_file):
+        try:
+            info = SaveToSameFileIPTCInfo(jpg_file)
+            return info.data[TAGGED_PHOTO_KEY] == TAGGED_PHOTO_LABEL
+        except Exception, e:
+            if e.message == 'No IPTC data found.':
+                return False
+            else:
+                raise
 
 class FileWalker(object):
     def __init__(self, file_labeler, label_service):
@@ -82,6 +104,9 @@ class FileWalker(object):
         files = self.collect_files(parent_directory)
         self._log.info('Found (%d) files in [%s]. Start labeling...' % (len(files), parent_directory))
         for jpg_file in files:
+            if self._file_labeler.already_labeled(jpg_file):
+                self._log.info('Skipping already labeled file [%s]' % jpg_file)
+                continue
             self._log.info('Labeling file [%s]' % jpg_file)
             tags = self._label_service.tags_for_image(jpg_file)
             self._file_labeler.label(jpg_file, tags)

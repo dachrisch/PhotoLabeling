@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-from label.label import FileWalker, ImageLabeler, LabelServiceExecutor, GoogleServiceConnector
+from label.label import FileWalker, FileLabeler, LabelServiceExecutor, GoogleServiceConnector
 
 
 def _checked_load_logging_config(config_path):
@@ -24,7 +24,7 @@ def main(options):
         _checked_load_logging_config("~/.python/logging.conf")
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    file_walker = FileWalker(ImageLabeler(), LabelServiceExecutor(GoogleServiceConnector()))
+    file_walker = FileWalker(FileLabeler(), LabelServiceExecutor(GoogleServiceConnector()))
     file_walker.walk_and_tag(args.root_directory)
 
 
