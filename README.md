@@ -5,13 +5,17 @@ PhotoLabeling
 ===================
 Labels Photos using Googles Vision engine
 
-
 usage
 -----
 
-python main.py [options]
+usage: main.py [-h] [-v] root_directory
 
-      -v, --verbose         print status messages to stdout more verbose
+positional arguments:
+    root_directory  directory to start scanning for files
+
+optional arguments:
+    -h, --help      show this help message and exit
+    -v, --verbose   print status messages to stdout more verbose
 
 requirements
 ------------
