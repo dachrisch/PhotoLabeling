@@ -45,6 +45,8 @@ class LabelServiceExecutor(object):
 
     def tags_for_image(self, image_file):
         response = self._perform_request(image_file)
+        if 'labelAnnotations' not in response['responses'][0]:
+            raise NoLabelFoundException(response['responses'])
         labels = tuple(
             annotation['description'] for annotation in
             sorted(filter(lambda field: field['score'] > 0.8, response['responses'][0]['labelAnnotations']),
@@ -60,6 +62,10 @@ class LabelServiceExecutor(object):
 
     def _execute_request(self, body):
         return self.__connector.build_request(body).execute()
+
+
+class NoLabelFoundException(Exception):
+    pass
 
 
 class AlreadyLabeledException(Exception):
@@ -94,6 +100,7 @@ class FileLabeler(object):
             else:
                 raise
 
+
 class FileWalker(object):
     def __init__(self, file_labeler, label_service):
         self._file_labeler = file_labeler
@@ -108,8 +115,11 @@ class FileWalker(object):
                 self._log.info('Skipping already labeled file [%s]' % jpg_file)
                 continue
             self._log.info('Labeling file [%s]' % jpg_file)
-            tags = self._label_service.tags_for_image(jpg_file)
-            self._file_labeler.label(jpg_file, tags)
+            try:
+                tags = self._label_service.tags_for_image(jpg_file)
+                self._file_labeler.label(jpg_file, tags)
+            except NoLabelFoundException, e:
+                self._log.warn('no labels found for [%s]: %s' % (jpg_file, e.message))
         self._log.info('done.')
 
     @staticmethod
