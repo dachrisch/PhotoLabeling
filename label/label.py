@@ -45,12 +45,15 @@ class LabelServiceExecutor(object):
 
     def tags_for_image(self, image_file):
         response = self._perform_request(image_file)
-        if 'labelAnnotations' not in response['responses'][0]:
-            raise NoLabelFoundException(response['responses'])
         labels = tuple(
             annotation['description'] for annotation in
             sorted(filter(lambda field: field['score'] > 0.8, response['responses'][0]['labelAnnotations']),
                    key=lambda field: field['score'], reverse=True))
+
+        if 'labelAnnotations' not in response['responses'][0]:
+            raise NoLabelFoundException(response['responses'])
+        elif len(labels) == 0:
+            raise NoLabelFoundException("no labels left after filter", response['responses'])
         self._log.info('found (%d) tags for file [%s]: %s' % (len(labels), image_file, labels))
         return labels
 
