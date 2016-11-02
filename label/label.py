@@ -2,8 +2,10 @@
 
 import base64
 import logging
+import os
 
 from googleapiclient import discovery
+from googleapiclient.errors import HttpError
 from oauth2client.client import GoogleCredentials
 
 from iptcinfo_manipulation import SaveToSameFileIPTCInfo
@@ -44,7 +46,12 @@ class LabelServiceExecutor(object):
         })
 
     def tags_for_image(self, image_file):
-        response = self._perform_request(image_file)
+        try:
+            response = self._perform_request(image_file)
+        except HttpError, e:
+            if e.resp.reason == 'Request Admission Denied.':
+                raise ImageTooBigException(image_file, e)
+            raise
 
         if 'labelAnnotations' not in response['responses'][0]:
             raise NoLabelFoundException(response['responses'])
@@ -78,6 +85,10 @@ class AlreadyLabeledException(Exception):
     pass
 
 
+class ImageTooBigException(Exception):
+    pass
+
+
 class FileLabeler(object):
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
@@ -103,8 +114,7 @@ class FileLabeler(object):
         except Exception, e:
             if e.message == 'No IPTC data found.':
                 return False
-            else:
-                raise
+            raise
 
 
 class FileWalker(object):
@@ -126,6 +136,8 @@ class FileWalker(object):
                 self._file_labeler.label(jpg_file, tags)
             except NoLabelFoundException, e:
                 self._log.warn('no labels found for [%s]: %s' % (jpg_file, e.message))
+            except ImageTooBigException:
+                self._log.error('could not label image [%s], it is too big: %d' % (jpg_file, os.path.getsize(jpg_file)))
         self._log.info('done.')
 
     @staticmethod

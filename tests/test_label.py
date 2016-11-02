@@ -4,12 +4,13 @@ import unittest
 
 import numpy
 from PIL import Image
+from googleapiclient.errors import HttpError
 from iptcinfo import IPTCInfo
 
 sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
 from label.label import GoogleServiceConnector, LabelServiceExecutor, FileLabeler, FileWalker, TAGGED_PHOTO_LABEL, \
     TAGGED_PHOTO_KEY, \
-    AlreadyLabeledException
+    AlreadyLabeledException, ImageTooBigException
 from label.iptcinfo_manipulation import SaveToSameFileIPTCInfo, BackupFileExistsException
 
 TESTDIR = '_testdir'
@@ -48,6 +49,18 @@ class LabelExifTagTest(unittest.TestCase):
         self.assertTupleEqual(
             (u'cat', u'mammal', u'vertebrate', u'whiskers'),
             service_executor.tags_for_image(self.jpg_file))
+
+    def test_when_exception_for_big_image_is_raise_it_will_be_skipped(self):
+        def raise_exception(body):
+            raise HttpError(response, bytes(), 'requesting https://vision.googleapis.com/v1/images:annotate?alt=json')
+        connector = TestServiceConnector()
+        response = type('MyObject', (object,), {})
+        response.reason = 'Request Admission Denied.'
+        response.status = 400
+        connector.build_request = raise_exception
+        service_executor = LabelServiceExecutor(connector)
+        self.assertRaisesRegexp(ImageTooBigException, self.jpg_file,
+                                service_executor.tags_for_image, self.jpg_file)
 
     def test_label_image(self):
         labeler = FileLabeler()
