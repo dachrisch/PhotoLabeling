@@ -3,5 +3,3 @@ oauth2client
 iptcinfo
 numpy
 mock
--e git+git://github.com/ojii/pymaging.git#egg=pymaging
--e git+git://github.com/ojii/pymaging-jpg.git#egg=pymaging-jpg
