@@ -119,9 +119,8 @@ class LabelExifTagTest(unittest.TestCase):
         self._create_testfile('_testdir/2016/10/test1.jpg')
         file_walker._log = MagicMock()
         file_walker.walk_and_tag('_testdir/2016')
-        file_walker._log.warn.assert_called_once_with(
+        file_walker._log.error.assert_called_once_with(
             'image [_testdir/2016/10/test1.jpg] is too big, trying resized version')
-        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
 
     def test_resize_image(self):
         re_sizer = ImageReSizer()

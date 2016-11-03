@@ -121,7 +121,6 @@ class FileWalker(object):
     def __init__(self, file_labeler, label_service):
         self._file_labeler = file_labeler
         self._label_service = label_service
-        self._image_re_sizer = ImageReSizer()
         self._log = logging.getLogger(self.__class__.__name__)
 
     def walk_and_tag(self, parent_directory):
@@ -138,10 +137,7 @@ class FileWalker(object):
             except NoLabelFoundException, e:
                 self._log.warn('no labels found for [%s]: %s' % (jpg_file, e.message))
             except ImageTooBigException:
-                self._log.warn('image [%s] is too big, trying resized version' % jpg_file)
-                re_sized_file = self._image_re_sizer.resize(jpg_file)
-                tags = self._label_service.tags_for_image(re_sized_file.name)
-                self._file_labeler.label(jpg_file, tags)
+                self._log.error('image [%s] is too big, trying resized version' % jpg_file)
         self._log.info('done.')
 
 
