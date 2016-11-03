@@ -122,7 +122,7 @@ class LabelExifTagTest(unittest.TestCase):
         file_walker._log.error.assert_called_once_with(
             'image [_testdir/2016/10/test1.jpg] is too big, skipping')
 
-    def test_resize_image(self):
+    def te_st_resize_image(self):
         re_sizer = ImageReSizer()
         re_sized_image = re_sizer.resize(self.jpg_file)
         self.assertEqual(7027, os.lstat(re_sized_image.name).st_size)
