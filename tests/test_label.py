@@ -24,7 +24,7 @@ class LabelExifTagTest(unittest.TestCase):
     @staticmethod
     def _create_testfile(jpg_filename):
         import shutil
-        shutil.copy('test_1x1_no_exif.jpg', jpg_filename)
+        shutil.copy('tests/test_1x1_no_exif.jpg', jpg_filename)
 
     def tearDown(self):
         import shutil
