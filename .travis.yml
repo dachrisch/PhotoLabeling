@@ -3,6 +3,7 @@ cache: pip
 python:
   - "2.7"
 script:
+  - nosetests
   - coverage run tests/test_label.py
 install:
   - pip install -r requirements.txt
