@@ -120,7 +120,7 @@ class LabelExifTagTest(unittest.TestCase):
         file_walker._log = MagicMock()
         file_walker.walk_and_tag('_testdir/2016')
         file_walker._log.error.assert_called_once_with(
-            'image [_testdir/2016/10/test1.jpg] is too big, trying resized version')
+            'image [_testdir/2016/10/test1.jpg] is too big, skipping')
 
     def test_resize_image(self):
         re_sizer = ImageReSizer()

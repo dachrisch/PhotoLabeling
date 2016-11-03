@@ -137,7 +137,7 @@ class FileWalker(object):
             except NoLabelFoundException, e:
                 self._log.warn('no labels found for [%s]: %s' % (jpg_file, e.message))
             except ImageTooBigException:
-                self._log.error('image [%s] is too big, trying resized version' % jpg_file)
+                self._log.error('image [%s] is too big, skipping' % jpg_file)
         self._log.info('done.')
 
 
