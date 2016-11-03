@@ -2,8 +2,6 @@ import os
 import sys
 import unittest
 
-import numpy
-from PIL import Image
 from googleapiclient.errors import HttpError
 from iptcinfo import IPTCInfo
 from mock import MagicMock
@@ -20,18 +18,17 @@ TESTDIR = '_testdir'
 class LabelExifTagTest(unittest.TestCase):
     def setUp(self):
         os.makedirs(TESTDIR)
-        self.jpg_file = os.path.join(TESTDIR, 'test_1x1_no_exif.jpg')
+        self.jpg_file = os.path.join(TESTDIR, 'testfile.jpg')
         self._create_testfile(self.jpg_file)
 
     @staticmethod
     def _create_testfile(jpg_filename):
-        image = Image.fromarray(numpy.zeros((100, 100, 3), dtype=numpy.uint8), 'RGB')
-        image.save(jpg_filename)
+        import shutil
+        shutil.copy('test_1x1_no_exif.jpg', jpg_filename)
 
     def tearDown(self):
         import shutil
         shutil.rmtree(TESTDIR)
-        pass
 
     def test_create_empty_keywords(self):
         info = IPTCInfo(self.jpg_file, force=True)
@@ -130,20 +127,20 @@ class LabelExifTagTest(unittest.TestCase):
         re_sizer = ImageReSizer()
         re_sized_image = re_sizer.resize(self.jpg_file)
         self.assertEqual(7027, os.lstat(re_sized_image.name).st_size)
-        self.assertEqual(823, os.lstat(self.jpg_file).st_size)
+        self.assertEqual(539, os.lstat(self.jpg_file).st_size)
 
     def test_newly_saved_file_with_IPTCInfo_has_same_stats(self):
-        self.assertEqual(823, os.lstat(self.jpg_file).st_size)
+        self.assertEqual(539, os.lstat(self.jpg_file).st_size)
 
         SaveToSameFileIPTCInfo(self.jpg_file, force=True).save()
         backup_file = '%s~' % self.jpg_file
 
-        self.assertEqual(861, os.lstat(self.jpg_file).st_size)
-        self.assertEqual(823, os.lstat(backup_file).st_size)
+        self.assertEqual(577, os.lstat(self.jpg_file).st_size)
+        self.assertEqual(539, os.lstat(backup_file).st_size)
 
     def test_do_not_overwrite_backups(self):
         SaveToSameFileIPTCInfo(self.jpg_file, force=True).save()
-        self.assertRaisesRegexp(BackupFileExistsException, '_testdir/test_1x1_no_exif.jpg',
+        self.assertRaisesRegexp(BackupFileExistsException, '_testdir/testfile.jpg',
                                 SaveToSameFileIPTCInfo(self.jpg_file, force=True).save)
 
     def test_mark_already_tagged_image(self):
@@ -155,7 +152,7 @@ class LabelExifTagTest(unittest.TestCase):
     def test_do_not_tag_already_tagged_image(self):
         labeler = FileLabeler()
         labeler.label(self.jpg_file, (u'dog', u'mammal'))
-        self.assertRaisesRegexp(AlreadyLabeledException, '_testdir/test_1x1_no_exif.jpg',
+        self.assertRaisesRegexp(AlreadyLabeledException, '_testdir/testfile.jpg',
                                 labeler.label, self.jpg_file, (u'dog', u'mammal'))
 
 
