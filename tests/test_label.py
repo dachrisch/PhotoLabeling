@@ -6,11 +6,12 @@ import numpy
 from PIL import Image
 from googleapiclient.errors import HttpError
 from iptcinfo import IPTCInfo
+from mock import MagicMock
 
 sys.path.insert(0, os.path.abspath(__file__ + "/../.."))
 from label.label import GoogleServiceConnector, LabelServiceExecutor, FileLabeler, FileWalker, TAGGED_PHOTO_LABEL, \
     TAGGED_PHOTO_KEY, \
-    AlreadyLabeledException, ImageTooBigException
+    AlreadyLabeledException, ImageTooBigException, ImageReSizer
 from label.iptcinfo_manipulation import SaveToSameFileIPTCInfo, BackupFileExistsException
 
 TESTDIR = '_testdir'
@@ -51,13 +52,8 @@ class LabelExifTagTest(unittest.TestCase):
             service_executor.tags_for_image(self.jpg_file))
 
     def test_when_exception_for_big_image_is_raise_it_will_be_skipped(self):
-        def raise_exception(body):
-            raise HttpError(response, bytes(), 'requesting https://vision.googleapis.com/v1/images:annotate?alt=json')
         connector = TestServiceConnector()
-        response = type('MyObject', (object,), {})
-        response.reason = 'Request Admission Denied.'
-        response.status = 400
-        connector.build_request = raise_exception
+        connector.build_request = MagicMock(side_effect=create_exception())
         service_executor = LabelServiceExecutor(connector)
         self.assertRaisesRegexp(ImageTooBigException, self.jpg_file,
                                 service_executor.tags_for_image, self.jpg_file)
@@ -116,6 +112,26 @@ class LabelExifTagTest(unittest.TestCase):
         self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
         self.assertEqual(IPTCInfo('_testdir/2016/11/test2.jpg').keywords, ['already', 'tagged'])
 
+    def test_log_error_when_image_to_big_fails(self):
+        connector = TestServiceConnector()
+        connector.build_request = MagicMock(side_effect=(create_exception(), connector.build_request(None)))
+        service_executor = LabelServiceExecutor(connector)
+
+        file_walker = FileWalker(FileLabeler(), service_executor)
+        os.makedirs('_testdir/2016/10')
+        self._create_testfile('_testdir/2016/10/test1.jpg')
+        file_walker._log = MagicMock()
+        file_walker.walk_and_tag('_testdir/2016')
+        file_walker._log.warn.assert_called_once_with(
+            'image [_testdir/2016/10/test1.jpg] is too big, trying resized version')
+        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
+
+    def test_resize_image(self):
+        re_sizer = ImageReSizer()
+        re_sized_image = re_sizer.resize(self.jpg_file)
+        self.assertEqual(7027, os.lstat(re_sized_image.name).st_size)
+        self.assertEqual(823, os.lstat(self.jpg_file).st_size)
+
     def test_newly_saved_file_with_IPTCInfo_has_same_stats(self):
         self.assertEqual(823, os.lstat(self.jpg_file).st_size)
 
@@ -125,7 +141,7 @@ class LabelExifTagTest(unittest.TestCase):
         self.assertEqual(861, os.lstat(self.jpg_file).st_size)
         self.assertEqual(823, os.lstat(backup_file).st_size)
 
-    def test_dont_overwrite_backups(self):
+    def test_do_not_overwrite_backups(self):
         SaveToSameFileIPTCInfo(self.jpg_file, force=True).save()
         self.assertRaisesRegexp(BackupFileExistsException, '_testdir/test_1x1_no_exif.jpg',
                                 SaveToSameFileIPTCInfo(self.jpg_file, force=True).save)
@@ -136,7 +152,7 @@ class LabelExifTagTest(unittest.TestCase):
         info = IPTCInfo(self.jpg_file)
         self.assertEqual(TAGGED_PHOTO_LABEL, info.data[TAGGED_PHOTO_KEY])
 
-    def test_dont_tag_already_tagged_image(self):
+    def test_do_not_tag_already_tagged_image(self):
         labeler = FileLabeler()
         labeler.label(self.jpg_file, (u'dog', u'mammal'))
         self.assertRaisesRegexp(AlreadyLabeledException, '_testdir/test_1x1_no_exif.jpg',
@@ -158,7 +174,13 @@ class TestServiceConnector(GoogleServiceConnector):
                                                          {'score': 0.93,
                                                           'description': u'whiskers'}
                                                          )},)})
-        from mock import MagicMock
         annotations = MagicMock()
         annotations.execute = MagicMock(return_value=response)
         return annotations
+
+
+def create_exception():
+    response = type('MyObject', (object,), {})
+    response.reason = 'Request Admission Denied.'
+    response.status = 400
+    return HttpError(response, bytes(), 'requesting https://vision.googleapis.com/v1/images:annotate?alt=json')

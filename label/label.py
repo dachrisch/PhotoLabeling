@@ -49,7 +49,7 @@ class LabelServiceExecutor(object):
         try:
             response = self._perform_request(image_file)
         except HttpError, e:
-            if e.resp.reason == 'Request Admission Denied.':
+            if 'Request Admission Denied.' in str(e):
                 raise ImageTooBigException(image_file, e)
             raise
 
@@ -121,6 +121,7 @@ class FileWalker(object):
     def __init__(self, file_labeler, label_service):
         self._file_labeler = file_labeler
         self._label_service = label_service
+        self._image_re_sizer = ImageReSizer()
         self._log = logging.getLogger(self.__class__.__name__)
 
     def walk_and_tag(self, parent_directory):
@@ -137,8 +138,12 @@ class FileWalker(object):
             except NoLabelFoundException, e:
                 self._log.warn('no labels found for [%s]: %s' % (jpg_file, e.message))
             except ImageTooBigException:
-                self._log.error('could not label image [%s], it is too big: %d' % (jpg_file, os.path.getsize(jpg_file)))
+                self._log.warn('image [%s] is too big, trying resized version' % jpg_file)
+                re_sized_file = self._image_re_sizer.resize(jpg_file)
+                tags = self._label_service.tags_for_image(re_sized_file.name)
+                self._file_labeler.label(jpg_file, tags)
         self._log.info('done.')
+
 
     @staticmethod
     def collect_files(parent_directory):
@@ -150,3 +155,21 @@ class FileWalker(object):
             collected_files.extend(tuple(
                 map(lambda filename: path.join(root, filename), filter(filenames, "*.jpg"))))
         return collected_files
+
+
+class ImageReSizer(object):
+    def __init__(self, base_height=640):
+        self.base_height = base_height
+
+    def resize(self, image_file):
+        from tempfile import NamedTemporaryFile
+        from PIL import Image
+        (path, extension) = os.path.splitext(image_file)
+        re_sized_image_file = NamedTemporaryFile(suffix=extension)
+
+        img = Image.open(image_file)
+        hpercent = (self.base_height / float(img.size[1]))
+        wsize = int((float(img.size[0]) * float(hpercent)))
+        img = img.resize((wsize, self.base_height), Image.ANTIALIAS)
+        img.save(re_sized_image_file)
+        return re_sized_image_file
