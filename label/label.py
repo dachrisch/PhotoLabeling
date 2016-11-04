@@ -12,6 +12,7 @@ from iptcinfo_manipulation import SaveToSameFileIPTCInfo
 
 TAGGED_PHOTO_KEY = 'custom1'
 TAGGED_PHOTO_LABEL = 'already_tagged_PhotoLabel_v1.0'
+EXCLUDED_DIRS = ('@eaDir',)
 
 
 class GoogleServiceConnector(object):
@@ -140,14 +141,14 @@ class FileWalker(object):
                 self._log.error('image [%s] is too big, skipping' % jpg_file)
         self._log.info('done.')
 
-
     @staticmethod
     def collect_files(parent_directory):
         from fnmatch import filter
         from os import path, walk
 
         collected_files = []
-        for root, _, filenames in walk(parent_directory):
+        for root, dirs, filenames in walk(parent_directory):
+            dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
             collected_files.extend(tuple(
                 map(lambda filename: path.join(root, filename), filter(filenames, "*.jpg"))))
         return collected_files
