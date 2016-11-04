@@ -13,7 +13,7 @@ from iptcinfo_manipulation import SaveToSameFileIPTCInfo
 TAGGED_PHOTO_KEY = 'custom1'
 TAGGED_PHOTO_LABEL = 'already_tagged_PhotoLabel_v1.0'
 EXCLUDED_DIRS = ('@eaDir',)
-
+EXCLUDED_FILES = ('SYNOPHOTO_THUMB', )
 
 class GoogleServiceConnector(object):
     def __init__(self):
@@ -143,14 +143,15 @@ class FileWalker(object):
 
     @staticmethod
     def collect_files(parent_directory):
-        from fnmatch import filter
+        from fnmatch import filter as file_filter
         from os import path, walk
 
         collected_files = []
         for root, dirs, filenames in walk(parent_directory):
-            dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+            dirs[:] = filter(lambda d : d not in EXCLUDED_DIRS, dirs)
+            filtered_filenames = filter(lambda f: not(any(exclude in f for exclude in EXCLUDED_FILES)), filenames)
             collected_files.extend(tuple(
-                map(lambda filename: path.join(root, filename), filter(filenames, "*.jpg"))))
+                map(lambda filename: path.join(root, filename), file_filter(filtered_filenames, "*.jpg"))))
         return collected_files
 
 

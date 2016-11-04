@@ -128,11 +128,13 @@ class LabelExifTagTest(unittest.TestCase):
         self._create_testfile('_testdir/2016/10/test1.jpg')
         os.makedirs('_testdir/2016/10/@eaDir')
         self._create_testfile('_testdir/2016/10/@eaDir/test1.jpg')
+        os.makedirs('_testdir/2016/10/2006-07-21 12.45.16.jpg/')
+        self._create_testfile('_testdir/2016/10/2006-07-21 12.45.16.jpg/SYNOPHOTO_THUMB_XL.jpg')
         file_walker.walk_and_tag('_testdir/2016')
 
         self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
         self.assertRaisesRegexp(Exception, 'No IPTC data found.', IPTCInfo, '_testdir/2016/10/@eaDir/test1.jpg')
-
+        self.assertRaisesRegexp(Exception, 'No IPTC data found.', IPTCInfo, '_testdir/2016/10/2006-07-21 12.45.16.jpg/SYNOPHOTO_THUMB_XL.jpg')
 
     def te_st_resize_image(self):
         re_sizer = ImageReSizer()
