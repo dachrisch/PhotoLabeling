@@ -58,11 +58,9 @@ class LabelServiceExecutor(object):
         if 'labelAnnotations' not in response['responses'][0]:
             raise NoLabelFoundException(response['responses'])
 
-        labels = tuple(
-            annotation['description'] for annotation in
-            sorted(filter(lambda field: field['score'] > 0.8, response['responses'][0]['labelAnnotations']) or
-                   response['responses'][0]['labelAnnotations'],
-                   key=lambda field: field['score'], reverse=True))
+        labels = tuple(annotation['description'] for annotation in
+                       sorted(response['responses'][0]['labelAnnotations'],
+                              key=lambda field: field['score'], reverse=True)[:5])
 
         if len(labels) == 0:
             raise NoLabelFoundException("no labels left after filter", response['responses'])

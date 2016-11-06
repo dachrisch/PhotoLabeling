@@ -45,7 +45,7 @@ class LabelExifTagTest(unittest.TestCase):
         connector = TestServiceConnector()
         service_executor = LabelServiceExecutor(connector)
         self.assertTupleEqual(
-            (u'cat', u'mammal', u'vertebrate', u'whiskers'),
+            (u'cat', u'mammal', u'vertebrate', u'whiskers', u'animal'),
             service_executor.tags_for_image(self.jpg_file))
 
     def test_when_exception_for_big_image_is_raise_it_will_be_skipped(self):
@@ -90,8 +90,10 @@ class LabelExifTagTest(unittest.TestCase):
         os.makedirs('_testdir/2015/10')
         self._create_testfile('_testdir/2015/10/test3.jpg')
         file_walker.walk_and_tag('_testdir/2016')
-        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
-        self.assertEqual(IPTCInfo('_testdir/2016/11/test2.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
+        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords,
+                         ['cat', 'mammal', 'vertebrate', 'whiskers', 'animal'])
+        self.assertEqual(IPTCInfo('_testdir/2016/11/test2.jpg').keywords,
+                         ['cat', 'mammal', 'vertebrate', 'whiskers', 'animal'])
         # file in 2015 has no tag set
         self.assertRaisesRegexp(Exception, 'No IPTC data found', IPTCInfo, '_testdir/2015/10/test3.jpg')
 
@@ -106,7 +108,8 @@ class LabelExifTagTest(unittest.TestCase):
         info.data[TAGGED_PHOTO_KEY] = TAGGED_PHOTO_LABEL
         info.save()
         file_walker.walk_and_tag('_testdir/2016')
-        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
+        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords,
+                         ['cat', 'mammal', 'vertebrate', 'whiskers', 'animal'])
         self.assertEqual(IPTCInfo('_testdir/2016/11/test2.jpg').keywords, ['already', 'tagged'])
 
     def test_log_error_when_image_to_big_fails(self):
@@ -132,9 +135,11 @@ class LabelExifTagTest(unittest.TestCase):
         self._create_testfile('_testdir/2016/10/2006-07-21 12.45.16.jpg/SYNOPHOTO_THUMB_XL.jpg')
         file_walker.walk_and_tag('_testdir/2016')
 
-        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords, ['cat', 'mammal', 'vertebrate', 'whiskers'])
+        self.assertEqual(IPTCInfo('_testdir/2016/10/test1.jpg').keywords,
+                         ['cat', 'mammal', 'vertebrate', 'whiskers', 'animal'])
         self.assertRaisesRegexp(Exception, 'No IPTC data found.', IPTCInfo, '_testdir/2016/10/@eaDir/test1.jpg')
-        self.assertRaisesRegexp(Exception, 'No IPTC data found.', IPTCInfo, '_testdir/2016/10/2006-07-21 12.45.16.jpg/SYNOPHOTO_THUMB_XL.jpg')
+        self.assertRaisesRegexp(Exception, 'No IPTC data found.', IPTCInfo,
+                                '_testdir/2016/10/2006-07-21 12.45.16.jpg/SYNOPHOTO_THUMB_XL.jpg')
 
     def te_st_resize_image(self):
         re_sizer = ImageReSizer()
@@ -182,7 +187,9 @@ class TestServiceConnector(GoogleServiceConnector):
                                                          {'score': 0.94,
                                                           'description': u'vertebrate'},
                                                          {'score': 0.93,
-                                                          'description': u'whiskers'}
+                                                          'description': u'whiskers'},
+                                                         {'score': 0.3,
+                                                          'description': u'animal'}
                                                          )},)})
         annotations = MagicMock()
         annotations.execute = MagicMock(return_value=response)
